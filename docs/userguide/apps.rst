@@ -3,7 +3,7 @@
 Apps
 ====
 
-An :ref:`App <app>` defines a computation that will be executed asynchronously by Parsl.
+An **:ref:`App <app>`** defines a computation that will be executed asynchronously by Parsl.
 :ref:`Apps <app>` are Python functions marked with a decorator which
 designates that the function will run asynchronously and cause it to return
 a :class:`~concurrent.futures.Future` instead of the result.
@@ -68,7 +68,7 @@ Practically, this means
 
 
 2. *Global variables are inaccessible*.
-   Functions should not use variables defined outside the function.
+   :ref:`Apps <app>` should not use variables defined outside the function.
    Likewise, do not assume that variables created inside the function are visible elsewhere.
 
 
@@ -125,7 +125,7 @@ Directly convert a function from a library to a :ref:`Python App <pythonapp>` by
     from module import function
     function_app = python_app(function)
 
-``function_app`` will act as Parsl :ref:`App <app>` function of ``function``.
+``function_app`` will act as a Parsl :ref:`App <app>` function of ``function``.
 
 It is also possible to create wrapped versions of functions, such as ones with pinned arguments.
 Parsl just requires first calling :meth:`~functools.update_wrapped` with the wrapped function
@@ -170,7 +170,7 @@ There are several classes of allowed types, each with different rules.
               return fp.readline()
 
   Files can also be outputs of a function, but only through the ``outputs`` kwargs (described below).
-- *Parsl Futures*: Functions can receive results from other :ref:`Apps <app>` as Parsl ``Future`` objects.
+- *Parsl Futures*. Functions can receive results from other :ref:`Apps <app>` as Parsl ``Future`` objects.
   Parsl will establish a dependency on the :ref:`App <app>`(s) which created the :ref:`Future <future>`(s)
   and start executing as soon as the preceding ones complete.
 
@@ -229,3 +229,9 @@ Some keyword arguments to the :ref:`Python App <pythonapp>` function are treated
     @python_app()
     def write_app(message, outputs=()):
         """Write a single message to every file in outputs"""
+        for path in outputs:
+            with open(path, 'w') as fp:
+                print(message, file=fp)
+
+    to_write = [
+        File(Path(tmpdir) / 'output-
