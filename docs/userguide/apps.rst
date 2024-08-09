@@ -238,3 +238,108 @@ Some keyword arguments to the :ref:`Python App <pythonapp>` function are treated
         File(Path(tmpdir) / 'output-1.txt')
     ]
     write_app('Hello!', outputs=to_write).result()
+    for path in to_write:
+        with open(path) as fp:
+            assert fp.read() == 'Hello!\n'
+
+3. walltime: (int) This keyword argument places a limit on the :ref:`App <app>`'s
+   runtime in seconds. If the walltime is exceeded, Parsl will raise a `parsl.app.errors.AppTimeout` exception.
+
+Outputs
++++++++
+
+A :ref:`Python App <pythonapp>` returns an :ref:`AppFuture <appfuture>` as a proxy for the results that will be returned by the
+:ref:`App <app>` once it is executed. This :ref:`Future <future>` can be inspected to obtain task status; 
+and it can be used to wait for the result, and when complete, present the output Python object(s) returned by the :ref:`App <app>`.
+In case of an error or :ref:`App <app>` failure, the :ref:`Future <future>` holds the exception raised by the :ref:`App <app>`.
+
+Options for Python Apps
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The :meth:`~parsl.app.app.python_app` decorator has a few options which control how Parsl executes all tasks
+run with that :ref:`App <app>`.
+For example, you can ensure that Parsl caches the results of the function and executes tasks on specific sites.
+
+.. code-block:: python
+
+    @python_app(cache=True, executors=['gpu'])
+    def expensive_gpu_function():
+        # ...
+        return
+
+See the Parsl documentation for full details.
+
+Limitations
+^^^^^^^^^^^
+
+To summarize, any Python function can be made a :ref:`Python App <pythonapp>` with a few restrictions:
+
+1. Functions should act only on defined input arguments. That is, they should not use script-level or global variables.
+2. Functions must explicitly import any required modules if they are defined in the script which starts Parsl.
+3. Parsl uses `dill` and `pickle` to serialize Python objects to/from :ref:`Apps <app>`. Therefore, Parsl requires that all input and output objects can be serialized by `dill` or `pickle`. See :ref:`Serialization <serialization>`.
+4. STDOUT and STDERR produced by :ref:`Python Apps <pythonapp>` remotely are not captured.
+
+Bash Apps
+---------
+
+.. code-block:: python
+
+       @bash_app
+       def echo(
+           name: str,
+           stdout=parsl.AUTO_LOGNAME  # Requests Parsl to return the stdout
+       ):
+           return f'echo "Hello, {name}!"'
+
+       future = echo('user')
+       future.result()  # block until task has completed
+
+       with open(future.stdout, 'r') as f:
+           print(f.read())
+
+
+A Parsl :ref:`Bash App <bashapp>` executes an external application by making a command-line execution.
+Parsl will execute the string returned by the function as a command-line script on a remote worker.
+
+Rules for Function Contents
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:ref:`Bash Apps <bashapp>` follow the same rules as :ref:`Python Apps <pythonapp>`. 
+For example, imports may need to be inside functions and global variables will be inaccessible.
+
+Inputs and Outputs
+^^^^^^^^^^^^^^^^^^
+
+:ref:`Bash Apps <bashapp>` can use the same kinds of inputs as :ref:`Python Apps <pythonapp>`, but only communicate results with Files.
+
+The :ref:`Bash Apps <bashapp>`, unlike :ref:`Python Apps <pythonapp>`, can also return the content printed to the Standard Output and Error.
+
+Special Keyword Arguments
+++++++++++++++++++++++++++
+
+In addition to the ``inputs``, ``outputs``, and ``walltime`` keyword arguments
+described above, a :ref:`Bash App <bashapp>` can accept the following keywords:
+
+1. stdout: (string, tuple or ``parsl.AUTO_LOGNAME``) The path to a file to which standard output should be redirected. If set to ``parsl.AUTO_LOGNAME``, the log will be automatically named according to task id and saved under ``task_logs`` in the run directory. If set to a tuple ``(filename, mode)``, standard output will be redirected to the named file, opened with the specified mode as used by the Python `open <https://docs.python.org/3/library/functions.html#open>`_ function.
+2. stderr: (string or ``parsl.AUTO_LOGNAME``) Like stdout, but for the standard error stream.
+3. label: (string) If the :ref:`App <app>` is invoked with ``stdout=parsl.AUTO_LOGNAME`` or ``stderr=parsl.AUTO_LOGNAME``, this argument will be appended to the log name.
+
+Outputs
++++++++
+
+If the :ref:`Bash App <bashapp>` exits with Unix exit code 0, then the :ref:`AppFuture <appfuture>` will complete. If the :ref:`Bash App <bashapp>`
+exits with any other code, Parsl will treat this as a failure, and the :ref:`AppFuture <appfuture>` will instead
+contain a `BashExitFailure` exception. The Unix exit code can be accessed through the
+``exitcode`` attribute of that `BashExitFailure`.
+
+Execution Options
+^^^^^^^^^^^^^^^^^
+
+:ref:`Bash Apps <bashapp>` have the same execution options (e.g., pinning to specific sites) as the :ref:`Python Apps <pythonapp>`.
+
+MPI Apps
+^^^^^^^^
+
+Applications which employ MPI to span multiple nodes are a special case of :ref:`Bash Apps <bashapp>`,
+and require special modification of Parsl's `execution environment <execution.html>`_ to function.
+Support for MPI applications is described `in a later section <mpi_apps.html>`_.
