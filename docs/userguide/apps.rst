@@ -3,18 +3,18 @@
 Apps
 ====
 
-An **:ref:`App <#app>`** defines a computation that will be executed asynchronously by Parsl.
-Apps are Python functions marked with a decorator which
+An :ref:`App <app>` defines a computation that will be executed asynchronously by Parsl.
+:ref:`Apps <app>` are Python functions marked with a decorator which
 designates that the function will run asynchronously and cause it to return
 a :class:`~concurrent.futures.Future` instead of the result.
 
-Apps can be one of three types of functions, each with their own type of decorator
+:ref:`Apps <app>` can be one of three types of functions, each with their own type of decorator:
 
 - ``@python_app``: Most Python functions
 - ``@bash_app``: A Python function which returns a command line program to execute
-- ``@join_app``: A function which launches one or more new :ref:`Apps <#app>`
+- ``@join_app``: A function which launches one or more new :ref:`Apps <app>`
 
-The intricacies of :ref:`Python Apps <#pythonapp>` and :ref:`Bash Apps <#bashapp>` are documented below. Join apps are documented in a later
+The intricacies of :ref:`Python Apps <pythonapp>` and :ref:`Bash Apps <bashapp>` are documented below. Join apps are documented in a later
 section (see :ref:`label-joinapp`).
 
 Python Apps
@@ -29,7 +29,7 @@ Python Apps
     print(hello_world('user').result())
 
 
-:ref:`Python Apps <#pythonapp>` run Python functions. The code inside a function marked by ``@python_app`` is what will
+:ref:`Python Apps <pythonapp>` run Python functions. The code inside a function marked by ``@python_app`` is what will
 be executed either locally or on a remote system.
 
 Most functions can run without modification.
@@ -40,7 +40,7 @@ Rules for Function Contents
 
 .. _function-rules:
 
-Parsl :ref:`Apps <#app>` have access to less information from the script that defined them
+Parsl :ref:`Apps <app>` have access to less information from the script that defined them
 than functions run via Python's native multiprocessing libraries.
 The reason is that functions are executed on workers that
 lack access to the global variables in the script that defined them.
@@ -118,14 +118,14 @@ The above rules assume that the user is running the example code from a standalo
 Functions that are defined in an installed Python module do not need to abide by these guidelines,
 as they are sent to workers differently than functions defined locally within a script.
 
-Directly convert a function from a library to a :ref:`Python App <#pythonapp>` by passing it as an argument to ``python_app``:
+Directly convert a function from a library to a :ref:`Python App <pythonapp>` by passing it as an argument to ``python_app``:
 
 .. code-block:: python
 
     from module import function
     function_app = python_app(function)
 
-``function_app`` will act as Parsl :ref:`App <#app>` function of ``function``.
+``function_app`` will act as Parsl :ref:`App <app>` function of ``function``.
 
 It is also possible to create wrapped versions of functions, such as ones with pinned arguments.
 Parsl just requires first calling :meth:`~functools.update_wrapped` with the wrapped function
@@ -151,7 +151,7 @@ The above example is equivalent to creating a new function (as below)
 Inputs and Outputs
 ^^^^^^^^^^^^^^^^^^
 
-:ref:`Python Apps <#pythonapp>` may be passed any Python type as an input and return any Python type, with a few exceptions.
+:ref:`Python Apps <pythonapp>` may be passed any Python type as an input and return any Python type, with a few exceptions.
 There are several classes of allowed types, each with different rules.
 
 - *Python Objects*: Any Python object that can be saved with
@@ -170,8 +170,8 @@ There are several classes of allowed types, each with different rules.
               return fp.readline()
 
   Files can also be outputs of a function, but only through the ``outputs`` kwargs (described below).
-- *Parsl Futures*. Functions can receive results from other :ref:`Apps <#app>` as Parsl ``Future`` objects.
-  Parsl will establish a dependency on the :ref:`App <#app>`(s) which created the Future(s)
+- *Parsl Futures*: Functions can receive results from other :ref:`Apps <app>` as Parsl ``Future`` objects.
+  Parsl will establish a dependency on the :ref:`App <app>`(s) which created the :ref:`Future <future>`(s)
   and start executing as soon as the preceding ones complete.
 
   .. code-block:: python
@@ -197,12 +197,12 @@ Learn more about the types of data allowed in `the data section <data.html>`_.
 Special Keyword Arguments
 +++++++++++++++++++++++++
 
-Some keyword arguments to the :ref:`Python App <#pythonapp>` function are treated differently by Parsl
+Some keyword arguments to the :ref:`Python App <pythonapp>` function are treated differently by Parsl
 
-1. inputs: (list) This keyword argument defines a list of input :ref:`Futures <#future>` or files. 
-   Parsl will wait for the results of any listed :ref:`Futures <#future>` to be resolved before executing the :ref:`App <#app>`.
+1. inputs: (list) This keyword argument defines a list of input :ref:`Futures <future>` or files. 
+   Parsl will wait for the results of any listed :ref:`Futures <future>` to be resolved before executing the :ref:`App <app>`.
    The ``inputs`` argument is useful both for passing files as arguments
-   and when one wishes to pass in an arbitrary number of :ref:`Futures <#future>` at call time.
+   and when one wishes to pass in an arbitrary number of :ref:`Futures <future>` at call time.
 
 .. code-block:: python
 
@@ -220,126 +220,12 @@ Some keyword arguments to the :ref:`Python App <#pythonapp>` function are treate
     print(reduce_future.result())  # 0 + 1 * 2 + 2 * 2 = 6
 
 2. outputs: (list) This keyword argument defines a list of files that
-   will be produced by the :ref:`App <#app>`. For each file thus listed, Parsl will create a :ref:`Future <#future>`,
-   track the file, and ensure that it is correctly created. The :ref:`Future <#future>` 
-   can then be passed to other :ref:`Apps <#app>` as an input argument.
+   will be produced by the :ref:`App <app>`. For each file thus listed, Parsl will create a :ref:`Future <future>`,
+   track the file, and ensure that it is correctly created. The :ref:`Future <future>` 
+   can then be passed to other :ref:`Apps <app>` as an input argument.
 
 .. code-block:: python
 
     @python_app()
     def write_app(message, outputs=()):
         """Write a single message to every file in outputs"""
-        for path in outputs:
-            with open(path, 'w') as fp:
-                print(message, file=fp)
-
-    to_write = [
-        File(Path(tmpdir) / 'output-0.txt'),
-        File(Path(tmpdir) / 'output-1.txt')
-    ]
-    write_app('Hello!', outputs=to_write).result()
-    for path in to_write:
-        with open(path) as fp:
-            assert fp.read() == 'Hello!\n'
-
-3. walltime: (int) This keyword argument places a limit on the :ref:`App <#app>`'s
-   runtime in seconds. If the walltime is exceeded, Parsl will raise a `parsl.app.errors.AppTimeout` exception.
-
-Outputs
-+++++++
-
-A :ref:`Python App <#pythonapp>` returns an :ref:`AppFuture <#appfuture>` as a proxy for the results that will be returned by the
-:ref:`App <#app>` once it is executed. This :ref:`Future <#future>` can be inspected to obtain task status; 
-and it can be used to wait for the result, and when complete, present the output Python object(s) returned by the :ref:`App <#app>`.
-In case of an error or :ref:`App <#app>` failure, the :ref:`Future <#future>` holds the exception raised by the :ref:`App <#app>`.
-
-Options for Python Apps
-^^^^^^^^^^^^^^^^^^^^^^^
-
-The :meth:`~parsl.app.app.python_app` decorator has a few options which control how Parsl executes all tasks
-run with that :ref:`App <#app>`.
-For example, you can ensure that Parsl caches the results of the function and executes tasks on specific sites.
-
-.. code-block:: python
-
-    @python_app(cache=True, executors=['gpu'])
-    def expensive_gpu_function():
-        # ...
-        return
-
-See the Parsl documentation for full details.
-
-Limitations
-^^^^^^^^^^^
-
-To summarize, any Python function can be made a :ref:`Python App <#pythonapp>` with a few restrictions:
-
-1. Functions should act only on defined input arguments. That is, they should not use script-level or global variables.
-2. Functions must explicitly import any required modules if they are defined in the script which starts Parsl.
-3. Parsl uses `dill` and `pickle` to serialize Python objects to/from :ref:`Apps <#app>`. Therefore, Parsl requires that all input and output objects can be serialized by `dill` or `pickle`. See :ref:`Serialization <#serialization>`.
-4. STDOUT and STDERR produced by :ref:`Python Apps <#pythonapp>` remotely are not captured.
-
-Bash Apps
----------
-
-.. code-block:: python
-
-       @bash_app
-       def echo(
-           name: str,
-           stdout=parsl.AUTO_LOGNAME  # Requests Parsl to return the stdout
-       ):
-           return f'echo "Hello, {name}!"'
-
-       future = echo('user')
-       future.result()  # block until task has completed
-
-       with open(future.stdout, 'r') as f:
-           print(f.read())
-
-
-A Parsl :ref:`Bash App <#bashapp>` executes an external application by making a command-line execution.
-Parsl will execute the string returned by the function as a command-line script on a remote worker.
-
-Rules for Function Contents
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:ref:`Bash Apps <#bashapp>` follow the same rules as :ref:`Python Apps <#pythonapp>`. 
-For example, imports may need to be inside functions and global variables will be inaccessible.
-
-Inputs and Outputs
-^^^^^^^^^^^^^^^^^^
-
-:ref:`Bash Apps <#bashapp>` can use the same kinds of inputs as :ref:`Python Apps <#pythonapp>`, but only communicate results with Files.
-
-The :ref:`Bash Apps <#bashapp>`, unlike :ref:`Python Apps <#pythonapp>`, can also return the content printed to the Standard Output and Error.
-
-Special Keyword Arguments
-+++++++++++++++++++++++++
-
-In addition to the ``inputs``, ``outputs``, and ``walltime`` keyword arguments
-described above, a :ref:`Bash App <#bashapp>` can accept the following keywords:
-
-1. stdout: (string, tuple or ``parsl.AUTO_LOGNAME``) The path to a file to which standard output should be redirected. If set to ``parsl.AUTO_LOGNAME``, the log will be automatically named according to task id and saved under ``task_logs`` in the run directory. If set to a tuple ``(filename, mode)``, standard output will be redirected to the named file, opened with the specified mode as used by the Python `open <https://docs.python.org/3/library/functions.html#open>`_ function.
-2. stderr: (string or ``parsl.AUTO_LOGNAME``) Like stdout, but for the standard error stream.
-3. label: (string) If the :ref:`App <#app>` is invoked with ``stdout=parsl.AUTO_LOGNAME`` or ``stderr=parsl.AUTO_LOGNAME``, this argument will be appended to the log name.
-
-Outputs
-+++++++
-
-If the :ref:`Bash App <#bashapp>` exits with Unix exit code 0, then the :ref:`AppFuture <#appfuture>` will complete. If the :ref:`Bash App <#bashapp>`
-exits with any other code, Parsl will treat this as a failure, and the :ref:`AppFuture <#appfuture>` will instead
-contain a `BashExitFailure` exception. The Unix exit code can be accessed through the
-``exitcode`` attribute of that `BashExitFailure`.
-
-Execution Options
-^^^^^^^^^^^^^^^^^
-
-:ref:`Bash Apps <#bashapp>` have the same execution options (e.g., pinning to specific sites) as the :ref:`Python Apps <#pythonapp>`.
-
-MPI Apps
-^^^^^^^^
-
-Applications which employ MPI to span multiple nodes are a special case of :ref:`Bash Apps <#bashapp>`,
-and require special modification of Parsl's `execution environment <execution.html>`_ to function.
-Support for MPI applications is described `in a later section <mpi_apps.html>`_.
