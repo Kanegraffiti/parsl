@@ -34,7 +34,7 @@ A Bash app is a special kind of app in Parsl that lets you run commands from you
 4. **Block**
    ----------
 
-   **Block;**
+   **Block**
 A block is like a group of computers loaned to you for doing work. Parsl will manage passing out work to each of them to do. This way, you can get your work done faster by using multiple computers at the same time.
 
    .. _block:
@@ -138,7 +138,7 @@ An MPI app is a special kind of app that uses a technology called Message Passin
 17. **Parallelism**
     ----------------
 
-     **Parallelism:**
+    **Parallelism:**
 Parallelism means doing multiple things at the same time. In Parsl, it means that your apps can run simultaneously on different computers. This can make your programs run much faster.
 
     .. _parallelism:
