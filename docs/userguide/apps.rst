@@ -3,7 +3,7 @@
 Apps
 ====
 
-An ** :ref:`App <app>` ** defines a computation that will be executed asynchronously by Parsl.
+An :ref:`App <app>` defines a computation that will be executed asynchronously by Parsl.
 :ref:`Apps <app>` are Python functions marked with a decorator which
 designates that the function will run asynchronously and cause it to return
 a :class:`~concurrent.futures.Future` instead of the result.
@@ -234,4 +234,7 @@ Some keyword arguments to the :ref:`Python App <pythonapp>` function are treated
                 print(message, file=fp)
 
     to_write = [
-        File(Path(tmpdir) / 'output-
+        File(Path(tmpdir) / 'output-0.txt'),
+        File(Path(tmpdir) / 'output-1.txt')
+    ]
+    write_app('Hello!', outputs=to_write).result()
